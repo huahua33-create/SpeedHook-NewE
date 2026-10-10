@@ -14,10 +14,8 @@ public class MainModule extends XposedModule {
         try {
             Class<?> locationClass = Class.forName("android.location.Location");
             
-            // 关键修复：类型明确声明为 Executable，不要用 Method
             Executable method = locationClass.getDeclaredMethod("getSpeed");
 
-            // 显式声明 Hooker 类型
             XposedInterface.Hooker hooker = new XposedInterface.Hooker() {
                 @Override
                 public Object intercept(XposedInterface.Chain chain) throws Throwable {
@@ -25,8 +23,8 @@ public class MainModule extends XposedModule {
                 }
             };
 
-            // 传入 Executable 和 Hooker
-            this.hook(method, hooker);
+            // 新版 API：hook() 返回 HookBuilder，再调用 .intercept() 传入 Hooker
+            this.hook(method).intercept(hooker);
             
             log(Log.INFO, "SpeedHook", "Loaded in " + param.getPackageName());
             
