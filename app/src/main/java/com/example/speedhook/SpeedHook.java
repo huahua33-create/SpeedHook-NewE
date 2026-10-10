@@ -1,39 +1,28 @@
 package com.example.speedhook;
 
-import android.location.Location;
-import io.github.libxposed.api.XposedInterface;
-import io.github.libxposed.api.XposedInterface.HookHandle;
+import io.github.libxposed.api.XposedModule;
 import io.github.libxposed.api.XposedInterface.Hooker;
+import io.github.libxposed.api.XposedInterface.HookHandle;
 
 public class SpeedHook {
-    public static void hookLocationSpeed(ClassLoader classLoader) {
+    public static void hookLocationSpeed(XposedModule module, ClassLoader classLoader) {
         try {
             Class<?> locationClass = classLoader.loadClass("android.location.Location");
-            XposedInterface.getInstance().hook(
+            
+            // 直接使用 module 的 hook 方法
+            module.hook(
                 locationClass.getDeclaredMethod("getSpeed"),
                 new Hooker() {
                     @Override
                     public Object intercept(HookHandle chain) {
+                        // 直接返回自定义速度，不调用 chain.proceed()
+                        // 这样原有方法就不会执行，完美篡改速度
                         return SpeedConfigProvider.getSpeed();
                     }
                 }
             );
-            Class<?> lmClass = classLoader.loadClass("android.location.LocationManager");
-            XposedInterface.getInstance().hook(
-                lmClass.getDeclaredMethod("getLastKnownLocation", String.class),
-                new Hooker() {
-                    @Override
-                    public Object intercept(HookHandle chain) {
-                        Object result = chain.proceed();
-                        if (result instanceof Location) {
-                            ((Location) result).setSpeed(SpeedConfigProvider.getSpeed());
-                        }
-                        return result;
-                    }
-                }
-            );
         } catch (Throwable t) {
-            // ignore
+            module.log("Hook error: " + t.getMessage());
         }
     }
 }
